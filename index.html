@@ -1,0 +1,265 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>这是一个知识图谱编辑器测试</title>
+
+  <style type="text/css">
+    body, select {
+      font: 10pt sans;
+    }
+    #mynetwork {
+      position:relative;
+      width: 800px;
+      height: 600px;
+      border: 10px solid lightgray;
+    }
+    table.legend_table {
+      font-size: 11px;
+      border-width:1px;
+      border-color:#d3d3d3;
+      border-style:solid;
+    }
+    table.legend_table,td {
+      border-width:1px;
+      border-color:#d3d3d3;
+      border-style:solid;
+      padding: 2px;
+    }
+    div.table_content {
+      width:80px;
+      text-align:center;
+    }
+    div.table_description {
+      width:100px;
+    }
+
+    #operation {
+      font-size:28px;
+    }
+    #node-popUp {
+      display:none;
+      position:absolute;
+      top:350px;
+      left:170px;
+      z-index:299;
+      width:250px;
+      height:80px;
+      background-color: #f9f9f9;
+      border-style:solid;
+      border-width:3px;
+      border-color: #5394ed;
+      padding:10px;
+      text-align: center;
+    }
+    #edge-popUp {
+      display:none;
+      position:absolute;
+      top:350px;
+      left:170px;
+      z-index:299;
+      width:250px;
+      height:100px;
+      background-color: #f9f9f9;
+      border-style:solid;
+      border-width:3px;
+      border-color: #5394ed;
+      padding:10px;
+      text-align: center;
+    }
+  </style>
+  <script type="text/javascript" src="js/exampleUtil.js"></script>
+  <script type="text/javascript" src="js/vis.js"></script>
+  <link href="js/vis-network.min.css" rel="stylesheet" type="text/css" />
+
+  <script type="text/javascript">
+    var nodes = null;
+    var edges = null;
+    var network = null;
+    // randomly create some nodes and edges
+    var data = getScaleFreeNetwork(19);
+    var seed = 2;
+
+    function setDefaultLocale() {
+      var defaultLocal = navigator.language;
+      var select = document.getElementById('locale');
+      select.selectedIndex = 0; // set fallback value
+      for (var i = 0, j = select.options.length; i < j; ++i) {
+        if (select.options[i].getAttribute('value') === defaultLocal) {
+          select.selectedIndex = i;
+          break;
+        }
+      }
+    }
+
+    function destroy() {
+      if (network !== null) {
+        network.destroy();
+        network = null;
+      }
+    }
+
+    function draw() {
+      destroy();
+      nodes = [];
+      edges = [];
+
+      // create a network
+      var container = document.getElementById('mynetwork');
+      var options = {
+        layout: {randomSeed:seed}, // just to make sure the layout is the same when the locale is changed
+        locale: document.getElementById('locale').value,
+        manipulation: {
+          addNode: function (data, callback) {
+            // filling in the popup DOM elements
+            document.getElementById('node-operation').innerHTML = "增加节点";
+            editNode(data, clearNodePopUp, callback);
+          },
+          editNode: function (data, callback) {
+            // filling in the popup DOM elements
+            document.getElementById('node-operation').innerHTML = "编辑节点";
+            editNode(data, cancelNodeEdit, callback);
+          },
+          addEdge: function (data, callback) {
+            if (data.from == data.to) {
+              var r = confirm("Do you want to connect the node to itself?");
+              if (r != true) {
+                callback(null);
+                return;
+              }
+            }
+            document.getElementById('edge-operation').innerHTML = "增加边";
+            editEdgeWithoutDrag(data, callback);
+          },
+          editEdge: {
+            editWithoutDrag: function(data, callback) {
+              document.getElementById('edge-operation').innerHTML = "编辑边";
+              editEdgeWithoutDrag(data,callback);
+            }
+          }
+        }
+      };
+      network = new vis.Network(container, data, options);
+    }
+
+    function editNode(data, cancelAction, callback) {
+      document.getElementById('node-label').value = data.label;
+      document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
+      document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
+      document.getElementById('node-popUp').style.display = 'block';
+    }
+
+    // Callback passed as parameter is ignored
+    function clearNodePopUp() {
+      document.getElementById('node-saveButton').onclick = null;
+      document.getElementById('node-cancelButton').onclick = null;
+      document.getElementById('node-popUp').style.display = 'none';
+    }
+
+    function cancelNodeEdit(callback) {
+      clearNodePopUp();
+      callback(null);
+    }
+
+    function saveNodeData(data, callback) {
+      data.label = document.getElementById('node-label').value;
+      clearNodePopUp();
+      callback(data);
+    }
+
+    function editEdgeWithoutDrag(data, callback) {
+      // filling in the popup DOM elements
+      document.getElementById('edge-label').value = data.label;
+      document.getElementById('edge-saveButton').onclick = saveEdgeData.bind(this, data, callback);
+      document.getElementById('edge-cancelButton').onclick = cancelEdgeEdit.bind(this,callback);
+      document.getElementById('edge-popUp').style.display = 'block';
+    }
+
+    function clearEdgePopUp() {
+      document.getElementById('edge-saveButton').onclick = null;
+      document.getElementById('edge-cancelButton').onclick = null;
+      document.getElementById('edge-popUp').style.display = 'none';
+    }
+
+    function cancelEdgeEdit(callback) {
+      clearEdgePopUp();
+      callback(null);
+    }
+
+    function saveEdgeData(data, callback) {
+      if (typeof data.to === 'object')
+        data.to = data.to.id
+      if (typeof data.from === 'object')
+        data.from = data.from.id
+      data.label = document.getElementById('edge-label').value;
+      clearEdgePopUp();
+      callback(data);
+    }
+
+    function init() {
+      setDefaultLocale();
+      draw();
+    }
+
+  </script>
+  
+</head>
+
+<body onload="init();">
+<h2>知识图谱编辑</h2>
+<!--<p style="width: 700px; font-size:14px; text-align: justify;">
+  
+</p>-->
+
+<p>
+  <label for="locale">Select a locale:</label>
+  <select id="locale" onchange="draw();">
+    <option value="cn">cn</option>
+    <option value="en">en</option>
+    
+    <!-- <option value="es">es</option>
+    <option value="it">it</option>
+    <option value="nl">nl</option>
+    <option value="pt-br">pt</option>
+    <option value="ru">ru</option> -->
+  </select>
+</p>
+
+<div id="node-popUp">
+  <span id="node-operation">node</span> <br>
+  <table style="margin:auto;">
+    <tr>
+      <td>概念/实例</td><td><input type="radio" name="radio" id="conradio" value="0" />概念
+          <input type="radio" name="radio" id="insradio" value="1"  checked="true"  />实例
+      </td>
+    </tr>
+    <tr>
+      <td>名称</td><td><input id="node-label" value="new value" /></td>
+    </tr>
+  </table>
+
+  <input type="button" value="save" id="node-saveButton" />
+  <input type="button" value="cancel" id="node-cancelButton" />
+</div>
+
+<div id="edge-popUp">
+  <span id="edge-operation">edge</span> <br>
+  <table style="margin:auto;">
+    <tr>
+      <td>关系/属性</td><td><input type="radio" name="radio" id="relradio" value="0" checked="true"  />关系
+          <input type="radio" name="radio" id="attradio" value="1" />属性
+      </td>
+      </tr>
+      <tr>
+      <td>名称</td><td><input id="edge-label" value="new value" /></td>
+    </tr></table>
+  <input type="button" value="save" id="edge-saveButton" />
+  <input type="button" value="cancel" id="edge-cancelButton" />
+</div>
+
+<br />
+<div id="mynetwork"></div>
+
+</body>
+</html>
+
