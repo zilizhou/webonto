@@ -19,7 +19,7 @@
     var ontocodes = '';
     var onecode = null;
     // randomly create some nodes and edges
-    var data = getScaleFreeNetwork(10);
+    var data = getScaleFreeNetwork(1);
     var seed = 2;
 
     function setDefaultLocale() {
@@ -50,7 +50,7 @@
       var container = document.getElementById('mynetwork');
       var options = {
         layout: {randomSeed:seed}, // just to make sure the layout is the same when the locale is changed
-        locale: document.getElementById('locale').value,
+        locale: 'cn',//document.getElementById('locale').value,
         manipulation: {
           addNode: function (data, callback) {
             // filling in the popup DOM elements
@@ -83,7 +83,7 @@
       };
       network = new vis.Network(container, data, options);
       network.on("doubleClick", function (params) {
-       alert(params.nodes);
+      alert(params.nodes);
        });
     }
 
@@ -159,13 +159,21 @@
     }
 
     function loadData(){
-     //htmlobj=$.ajax({url:"http://127.0.0.1:5000/dataFront",async:false, method="get"});
-     $.ajax({url:"http://127.0.0.1:5000/dataFront", data:{"mydata": "test"},dataType:"jsonp",success:function(data){
-         alert(data);
-      },error: function(){
-    alert(arguments[1]);
-}});
+    
+    $.ajax({
+            type: 'GET',
+            url: 'http://127.0.0.1:5000/dataFront',
+            dataType: 'jsonp', //希望服务器返回json格式的数据
+            jsonp: "callback",
+            jsonpCallback: "successCallback",//回调方法
+            success: function (ontodata) {
+                console.log(ontodata);
+                data=ontodata;
+                draw();
+            }
 
+        });
+   
     
     }
     
