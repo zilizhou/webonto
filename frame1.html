@@ -1,11 +1,14 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
+<!--<base href='http://127.0.0.1:5000'-->
 <title>无标题文档</title>
 <script type="text/javascript" src="js/exampleUtil.js"></script>
 <script type="text/javascript" src="js/vis.js"></script>
+<script type="text/javascript" src="js/jquery-3.2.1.min.js" ></script>  
 <link href="js/vis-network.min.css" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="css/test.css"/>
 
@@ -13,9 +16,10 @@
     var nodes = null;
     var edges = null;
     var network = null;
-    var ontocodes = null;
+    var ontocodes = '';
+    var onecode = null;
     // randomly create some nodes and edges
-    var data = getScaleFreeNetwork(4);
+    var data = getScaleFreeNetwork(10);
     var seed = 2;
 
     function setDefaultLocale() {
@@ -51,7 +55,7 @@
           addNode: function (data, callback) {
             // filling in the popup DOM elements
             document.getElementById('node-operation').innerHTML = "增加节点";
-            editNode(data, clearNodePopUp, callback);
+            addNode(data, clearNodePopUp, callback);
           },
           editNode: function (data, callback) {
             // filling in the popup DOM elements
@@ -78,9 +82,21 @@
         }
       };
       network = new vis.Network(container, data, options);
+      network.on("doubleClick", function (params) {
+       alert(params.nodes);
+       });
     }
 
     function editNode(data, cancelAction, callback) {
+      onecode='修改';
+      document.getElementById('node-label').value = data.label;
+      document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
+      document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
+      document.getElementById('node-popUp').style.display = 'block';
+    }
+    
+    function addNode(data, cancelAction, callback) {
+      onecode='增加';
       document.getElementById('node-label').value = data.label;
       document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
       document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
@@ -103,8 +119,8 @@
       data.label = document.getElementById('node-label').value;
       clearNodePopUp();
       var radioval=document.getElementsByName('nradio');
-      
-      document.getElementById('codearea').value=data.label;
+      ontocodes=ontocodes+onecode+data.label+'\n';
+      document.getElementById('codearea').value=ontocodes;
       callback(data);
     }
 
@@ -129,9 +145,9 @@
 
     function saveEdgeData(data, callback) {
       if (typeof data.to === 'object')
-        data.to = data.to.id
+        data.to = data.to.id;
       if (typeof data.from === 'object')
-        data.from = data.from.id
+        data.from = data.from.id;
       data.label = document.getElementById('edge-label').value;
       clearEdgePopUp();
       callback(data);
@@ -142,9 +158,18 @@
       draw();
     }
 
+    function loadData(){
+     //htmlobj=$.ajax({url:"http://127.0.0.1:5000/dataFront",async:false, method="get"});
+     $.ajax({url:"http://127.0.0.1:5000/dataFront", data:{"mydata": "test"},dataType:"jsonp",success:function(data){
+         alert(data);
+      },error: function(){
+    alert(arguments[1]);
+}});
+
+    
+    }
+    
   </script>
-
-
 
 </head>
 
@@ -188,7 +213,7 @@
     </div>
     
     <div id="nav">
-       nav
+       <label id="ontoLabel" onclick="loadData()" >myonto</label>
     </div>
     
     <div id="mynetwork">
@@ -204,8 +229,8 @@
     </div>
     
     <div id="section-right">
-        <form>
-            <textarea id="codearea" style="overflow-x:visible"></textarea>
+        <form action='http://127.0.0.1:5000/reccodes' method='post'>
+            <textarea id="codearea" name='codes' style="overflow-x:visible"></textarea>
             <input type="submit" value="上传代码"/>
             <input type="reset" value="重置代码"/>
             
