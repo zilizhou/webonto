@@ -19,7 +19,7 @@
     var ontocodes = '';
     var onecode = null;
     // randomly create some nodes and edges
-    var data = getScaleFreeNetwork(1);
+    var data = {'nodes':[{'id': 0, 'label': "请在左侧选择图谱",'color':'orange'}],edges:[]};//getScaleFreeNetwork(1);
     var seed = 2;
 
     function setDefaultLocale() {
@@ -51,6 +51,7 @@
       var options = {
         layout: {randomSeed:seed}, // just to make sure the layout is the same when the locale is changed
         locale: 'cn',//document.getElementById('locale').value,
+        
         manipulation: {
           addNode: function (data, callback) {
             // filling in the popup DOM elements
@@ -83,7 +84,22 @@
       };
       network = new vis.Network(container, data, options);
       network.on("doubleClick", function (params) {
-      alert(params.nodes);
+       
+       $.ajax({
+            type: 'GET',
+            url: 'http://127.0.0.1:5000/doubleClickNode',
+            data: params.nodes,
+            dataType: 'jsonp', //希望服务器返回json格式的数据
+            jsonp: "callback",
+            jsonpCallback: "successCallback",//回调方法
+            success: function (ontodata) {
+                console.log(ontodata);
+                
+            }
+
+        });
+       
+      
        });
     }
 
@@ -170,6 +186,7 @@
                 console.log(ontodata);
                 data=ontodata;
                 draw();
+                document.getElementById('codearea').value='';
             }
 
         });
