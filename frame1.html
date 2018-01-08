@@ -17,7 +17,10 @@
     var edges = null;
     var network = null;
     var ontocodes = '';
-    var onecode = null;
+    var editflag = null;//是否是编辑状态的标志
+    var conFlag = null;
+    var oldvalue=null;
+    var newvalue=null;
     // randomly create some nodes and edges
     var data = {'nodes':[{'id': 0, 'label': "请在左侧选择图谱",'color':'orange'}],edges:[]};//getScaleFreeNetwork(1);
     var seed = 2;
@@ -63,6 +66,10 @@
             document.getElementById('node-operation').innerHTML = "编辑节点";
             editNode(data, cancelNodeEdit, callback);
           },
+          deleteNode: function(data,callback){
+           document.getElementById('node-delete').innerHTML = "删除节点";
+           delNode(data, cancelDelEdit, callback);
+          },
           addEdge: function (data, callback) {
             if (data.from == data.to) {
               var r = confirm("Do you want to connect the node to itself?");
@@ -84,7 +91,7 @@
       };
       network = new vis.Network(container, data, options);
       network.on("doubleClick", function (params) {
-       
+       //双击某个节点，将节点的id传入到后台，得到这个节点的信息并展示到前台，以后考虑双击后隐藏。
        $.ajax({
             type: 'GET',
             url: 'http://127.0.0.1:5000/doubleClickNode',
@@ -104,21 +111,38 @@
     }
 
     function editNode(data, cancelAction, callback) {
-      onecode='修改';
+      editflag=true; //作为是否在编辑模式的标志
+      var id=data.id;//获取原来的节点的id,用来判断是否是概念还是实例
+      conFlag=true;//表示这是一个概念，否则是一个实例
       document.getElementById('node-label').value = data.label;
+      oldvalue=data.label;
       document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
       document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
       document.getElementById('node-popUp').style.display = 'block';
     }
     
     function addNode(data, cancelAction, callback) {
-      onecode='增加';
+      
       document.getElementById('node-label').value = data.label;
       document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
       document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
       document.getElementById('node-popUp').style.display = 'block';
     }
-
+    
+    function delNode(data, cancelDelEdit, callback) {
+      
+      //document.getElementById('node-label').value = data.label;
+      document.getElementById('node-confirmButton').onclick = delNodeData.bind(this, data, callback);
+      document.getElementById('node-cancelDelButton').onclick = cancelDelEdit.bind(this, callback);
+      document.getElementById('node-delPopUp').style.display = 'block';
+    }
+    
+    function clearDelPopUp(){
+      document.getElementById('node-confirmButton').onclick = null;
+      document.getElementById('node-cancelDelButton').onclick = null;
+      document.getElementById('node-delPopUp').style.display = 'none';
+    }
+    
     // Callback passed as parameter is ignored
     function clearNodePopUp() {
       document.getElementById('node-saveButton').onclick = null;
@@ -135,9 +159,37 @@
       data.label = document.getElementById('node-label').value;
       clearNodePopUp();
       var radioval=document.getElementsByName('nradio');
-      ontocodes=ontocodes+onecode+data.label+'\n';
+      
+      for(var i=0;i<radioval.length;i++){
+       
+       if(radioval[i].checked){
+        if(editflag){
+         if(conFlag){
+           ontocodes=ontocodes+"概念."+oldvalue+'>>'+radioval[i].value+'.'+data.label+'\n';  //如果是概念，则形成的语句
+         }else ontocodes=ontocodes+"实例."+oldvalue+'>>'+radioval[i].value+'.'+data.label+'\n'; //如果是实例，则形成的语句
+         editflag=false; //改变成非编辑状态标志
+       }else
+        ontocodes=ontocodes+radioval[i].value+'+='+data.label+'\n';  //这个是形成增加概念或实例的语句
+       }
+      }
       document.getElementById('codearea').value=ontocodes;
       callback(data);
+    }
+    
+    function delNodeData(data,callback){
+     clearDelPopUp();
+     if(conFlag){
+      ontocodes=ontocodes+"概念-="+data.nodes[0]+'\n';
+     }
+     else ontocodes=ontocodes+"实例-="+data.nodes[0]+'\n';
+     
+    document.getElementById('codearea').value=ontocodes;
+    callback(data);
+    }
+    
+    function cancelDelEdit(callback){
+     clearDelPopUp();
+     callback(null);
     }
 
     function editEdgeWithoutDrag(data, callback) {
@@ -170,12 +222,12 @@
     }
 
     function init() {
-      setDefaultLocale();
+      //setDefaultLocale();
       draw();
     }
 
     function loadData(){
-    
+    //用来根据知识图谱的名称，从知识图谱中得到内容，注意实现的时候是先得到第一层的内容。
     $.ajax({
             type: 'GET',
             url: 'http://127.0.0.1:5000/dataFront',
@@ -216,6 +268,22 @@
   <input type="button" value="save" id="node-saveButton" />
   <input type="button" value="cancel" id="node-cancelButton" />
 </div>
+
+<!--删除节点时的弹出框-->
+<div id="node-delPopUp">
+  <span id="node-delete">node</span>
+  <table style="margin:auto;">
+   <tr>
+    <td>
+  <label >确定要删除该节点吗？</label>
+    </td>
+  </tr>
+  </table>
+  <input type="button" value="confirm" id="node-confirmButton" />
+  <input type="button" value="cancel" id="node-cancelDelButton" />
+</div>
+
+
  <!-- 添加、编辑边时的弹出框--> 
  <div id="edge-popUp">
   <span id="edge-operation">edge</span>
