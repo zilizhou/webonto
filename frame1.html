@@ -17,8 +17,9 @@
     var edges = null;
     var network = null;
     var ontocodes = '';
-    var editflag = null;//是否是编辑状态的标志
-    var conFlag = null;//是否是概念
+    var editFlag = false;//是否是编辑状态的标志
+    var conFlag = null;//是否是概念 true表示概念，False表示实例
+    var relFlag=null;//是不是关系，true表示关系，False表示属性
     var oldvalue=null;//原来的值
     var newvalue=null;//新值
     var data_nodes=null;//取出data中的nodes
@@ -86,13 +87,16 @@
               }
             }
             document.getElementById('edge-operation').innerHTML = "增加边";
-            editEdgeWithoutDrag(data, callback);
+            addEdgeWithoutDrag(data, callback);
           },
           editEdge: {
             editWithoutDrag: function(data, callback) {
               document.getElementById('edge-operation').innerHTML = "编辑边";
               editEdgeWithoutDrag(data,callback);
             }
+          },
+          deleteEdge: {
+            
           }
         }
       };
@@ -119,7 +123,7 @@
     }
 
     function editNode(data, cancelAction, callback) {
-      editflag=true; //作为是否在编辑模式的标志
+      editFlag=true; //作为是否在编辑模式的标志
       var id=data.id;//获取原来的节点的id,用来判断是否是概念还是实例
       conFlag=true;//表示这是一个概念，否则是一个实例
       document.getElementById('node-label').value = data.label;
@@ -130,7 +134,7 @@
     }
     
     function addNode(data, cancelAction, callback) {
-      
+      editFlag=false;
       document.getElementById('node-label').value = data.label;
       document.getElementById('node-saveButton').onclick = saveNodeData.bind(this, data, callback);
       document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
@@ -165,28 +169,28 @@
 
     function saveNodeData(data, callback) {
       data.label = document.getElementById('node-label').value;
-      clearNodePopUp();
+      
       var radioval=document.getElementsByName('nradio');
       
       for(var i=0;i<radioval.length;i++){
        
        if(radioval[i].checked){
-        if(editflag){
+        if(editFlag){
          if(conFlag){
            ontocodes=ontocodes+"概念."+oldvalue+'>>'+radioval[i].value+'.'+data.label+'\n';  //如果是概念，则形成的语句
          }else ontocodes=ontocodes+"实例."+oldvalue+'>>'+radioval[i].value+'.'+data.label+'\n'; //如果是实例，则形成的语句
-         editflag=false; //改变成非编辑状态标志
+         editFlag=false; //改变成非编辑状态标志
        }else
         ontocodes=ontocodes+radioval[i].value+'+='+data.label+'\n';  //这个是形成增加概念或实例的语句
        }
       }
       document.getElementById('codearea').value=ontocodes;
-      
+      clearNodePopUp();
       callback(data);
     }
     //删除节点，注意，这里的问题是负责一个节点的删除。
     function delNodeData(data,callback){
-     clearDelPopUp();
+     
     
      if(conFlag){
       ontocodes=ontocodes+"概念-="+data_nodes._data[data.nodes[0]].label+'\n';
@@ -194,6 +198,7 @@
      else ontocodes=ontocodes+"实例-="+data_nodes._data[data.nodes[0]].label+'\n';
      
     document.getElementById('codearea').value=ontocodes;
+    clearDelPopUp();
     callback(data);
     }
     //取消删除节点
@@ -204,11 +209,29 @@
 
     function editEdgeWithoutDrag(data, callback) {
       // filling in the popup DOM elements
+      editFlag=true; //作为是否在编辑模式的标志
+      var id=data.id;//获取原来的节点的id,用来判断是否是概念还是实例
+      relFlag=true;//表示这是一个概念，否则是一个实例
+      oldvalue=data.label;
       document.getElementById('edge-label').value = data.label;
       document.getElementById('edge-saveButton').onclick = saveEdgeData.bind(this, data, callback);
       document.getElementById('edge-cancelButton').onclick = cancelEdgeEdit.bind(this,callback);
       document.getElementById('edge-popUp').style.display = 'block';
     }
+    
+    
+    function addEdgeWithoutDrag(data, callback) {
+      // filling in the popup DOM elements
+      editFlag=false; //作为是否在编辑模式的标志
+      var id=data.id;//获取原来的节点的id,用来判断是否是概念还是实例
+      relFlag=true;//表示这是一个概念，否则是一个实例
+      oldvalue=data.label;
+      document.getElementById('edge-label').value = data.label;
+      document.getElementById('edge-saveButton').onclick = saveEdgeData.bind(this, data, callback);
+      document.getElementById('edge-cancelButton').onclick = cancelEdgeEdit.bind(this,callback);
+      document.getElementById('edge-popUp').style.display = 'block';
+    }
+    
 
     function clearEdgePopUp() {
       document.getElementById('edge-saveButton').onclick = null;
@@ -226,7 +249,39 @@
         data.to = data.to.id;
       if (typeof data.from === 'object')
         data.from = data.from.id;
-      data.label = document.getElementById('edge-label').value;
+        
+        data.label = document.getElementById('edge-label').value;
+        
+      var radioval=document.getElementsByName('eradio');
+        
+      if(editFlag){
+        
+        //if(relFlag){
+        //   ontocodes=ontocodes+"关系."+oldvalue+'>>'+radioval[i].value+'.'+data.label+'\n';  //如果是概念，则形成的语句
+        // }else ontocodes=ontocodes+"实例."+oldvalue+'>>'+radioval[i].value+'.'+data.label+'\n'; //如果是实例，则形成的语句
+        
+        for(var i=0;i<radioval.length;i++){
+          if(radioval[i].checked){
+            if(relFlag)
+            ontocodes=ontocodes+'关系'+'.'+oldvalue+'>>'+radioval[i].value+'.'+data.label+'\n';
+            else ontocodes=ontocodes+'属性'+'.'+oldvalue+'>>'+radioval[i].value+'.'+data.label+'\n';
+          }
+        }
+        editFlag=false;
+      } else{
+       
+        for(var i=0;i<radioval.length;i++){
+          if(radioval[i].checked){
+            ontocodes=ontocodes+radioval[i].value+'+='+data.label+'\n';
+          }
+          
+        }
+        ontocodes=ontocodes+data_nodes._data[data.from].label+'.'+data.label+'+='+data_nodes._data[data.to].label+'\n';
+        
+      }
+      
+      document.getElementById('codearea').value=ontocodes;
+      //alert(data_nodes._data[data.to].label);
       clearEdgePopUp();
       callback(data);
     }
@@ -291,6 +346,20 @@
   </table>
   <input type="button" value="confirm" id="node-confirmButton" />
   <input type="button" value="cancel" id="node-cancelDelButton" />
+</div>
+
+<!--删除边时的弹出框-->
+<div id="edge-delPopUp">
+  <span id="edge-delete">node</span>
+  <table style="margin:auto;">
+   <tr>
+    <td>
+  <label >确定要删除该边吗？</label>
+    </td>
+  </tr>
+  </table>
+  <input type="button" value="confirm" id="edge-confirmButton" />
+  <input type="button" value="cancel" id="edge-cancelDelButton" />
 </div>
 
 
