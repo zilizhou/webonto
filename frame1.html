@@ -95,13 +95,15 @@
               editEdgeWithoutDrag(data,callback);
             }
           },
-          deleteEdge: {
-            
-          }
+          deleteEdge: function(data,callback) {
+            document.getElementById('edge-delete').innerHTML = "删除边";
+           delEdge(data, cancelDelEdgeEdit, callback);
+          },
         }
       };
       network = new vis.Network(container, data, options);
       data_nodes = network.body.data.nodes;
+      data_edges = network.body.data.edges;
       network.on("doubleClick", function (params) {
        //双击某个节点，将节点的id传入到后台，得到这个节点的信息并展示到前台，以后考虑双击后隐藏。
        $.ajax({
@@ -232,6 +234,11 @@
       document.getElementById('edge-popUp').style.display = 'block';
     }
     
+    function delEdge(data, cancelDelEdgeEdit, callback){
+      document.getElementById('edge-confirmButton').onclick = delEdgeData.bind(this, data, callback);
+      document.getElementById('edge-cancelDelButton').onclick = cancelDelEdgeEdit.bind(this, callback);
+      document.getElementById('edge-delPopUp').style.display = 'block';
+    }
 
     function clearEdgePopUp() {
       document.getElementById('edge-saveButton').onclick = null;
@@ -244,6 +251,18 @@
       callback(null);
     }
 
+    function cancelDelEdgeEdit(callback){
+        
+      clearDelEdgePopUp();
+      callback(null);
+    }
+    
+    function clearDelEdgePopUp(){
+      document.getElementById('edge-confirmButton').onclick = null;
+      document.getElementById('edge-cancelDelButton').onclick = null;
+      document.getElementById('edge-delPopUp').style.display = 'none';
+    }
+    
     function saveEdgeData(data, callback) {
       if (typeof data.to === 'object')
         data.to = data.to.id;
@@ -285,7 +304,18 @@
       clearEdgePopUp();
       callback(data);
     }
-
+    function delEdgeData(data,callback){
+               
+       data.label = document.getElementById('edge-label').value;
+       var edge=null;
+       edge=data_edges._data[data.edges[0]];
+       ontocodes=ontocodes+data_nodes._data[edge.from].label+'.'+data.label+'-='+data_nodes._data[edge.to].label+'\n';
+       document.getElementById('codearea').value=ontocodes;   
+        
+       clearDelEdgePopUp();
+       callback(data);
+    }
+    
     function init() {
       //setDefaultLocale();
       draw();
