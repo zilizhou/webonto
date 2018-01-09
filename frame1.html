@@ -18,11 +18,18 @@
     var network = null;
     var ontocodes = '';
     var editflag = null;//是否是编辑状态的标志
-    var conFlag = null;
-    var oldvalue=null;
-    var newvalue=null;
+    var conFlag = null;//是否是概念
+    var oldvalue=null;//原来的值
+    var newvalue=null;//新值
+    var data_nodes=null;//取出data中的nodes
+    var data_edges=null;//取出data中的edges
+    
+    
+    
     // randomly create some nodes and edges
-    var data = {'nodes':[{'id': 0, 'label': "请在左侧选择图谱",'color':'orange'}],edges:[]};//getScaleFreeNetwork(1);
+    var data = getScaleFreeNetwork(6);//{'nodes':[{'id': 0, 'label': "请在左侧选择图谱",'color':'orange'}],edges:[]};//
+    data_nodes=data.nodes;
+    data_edges=data.edges;
     var seed = 2;
 
     function setDefaultLocale() {
@@ -90,6 +97,7 @@
         }
       };
       network = new vis.Network(container, data, options);
+      data_nodes = network.body.data.nodes;
       network.on("doubleClick", function (params) {
        //双击某个节点，将节点的id传入到后台，得到这个节点的信息并展示到前台，以后考虑双击后隐藏。
        $.ajax({
@@ -173,20 +181,22 @@
        }
       }
       document.getElementById('codearea').value=ontocodes;
+      
       callback(data);
     }
-    
+    //删除节点，注意，这里的问题是负责一个节点的删除。
     function delNodeData(data,callback){
      clearDelPopUp();
+    
      if(conFlag){
-      ontocodes=ontocodes+"概念-="+data.nodes[0]+'\n';
+      ontocodes=ontocodes+"概念-="+data_nodes._data[data.nodes[0]].label+'\n';
      }
-     else ontocodes=ontocodes+"实例-="+data.nodes[0]+'\n';
+     else ontocodes=ontocodes+"实例-="+data_nodes._data[data.nodes[0]].label+'\n';
      
     document.getElementById('codearea').value=ontocodes;
     callback(data);
     }
-    
+    //取消删除节点
     function cancelDelEdit(callback){
      clearDelPopUp();
      callback(null);
