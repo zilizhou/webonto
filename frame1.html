@@ -60,7 +60,22 @@
       // create a network
       var container = document.getElementById('mynetwork');
       var options = {
-        layout: {randomSeed:seed}, // just to make sure the layout is the same when the locale is changed
+        //layout: {randomSeed:seed}, // just to make sure the layout is the same when the locale is changed
+        layout: {
+            randomSeed: undefined,
+            improvedLayout:true,
+            hierarchical: {
+              enabled:false,
+              levelSeparation: 150,
+              nodeSpacing: 100,
+              treeSpacing: 200,
+              blockShifting: true,
+              edgeMinimization: true,
+              parentCentralization: true,
+              direction: 'UD',        // UD, DU, LR, RL
+              sortMethod: 'hubsize'   // hubsize, directed
+            }
+          },
         locale: 'cn',//document.getElementById('locale').value,
         
         manipulation: {
@@ -341,6 +356,11 @@
     
     }
     
+    function clearCode(){
+        
+        ontocodes='';
+    }
+    
   </script>
 
 </head>
@@ -434,7 +454,7 @@
         <form action='http://127.0.0.1:5000/reccodes' method='post'>
             <textarea id="codearea" name='codes' style="overflow-x:visible"></textarea>
             <input type="submit" value="上传代码"/>
-            <input type="reset" value="重置代码"/>
+            <input type="reset" value="重置代码" onclick='clearCode();'/>
             
         </form>
         
